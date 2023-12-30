@@ -61,7 +61,7 @@ export type formikValuesTypes = {
   count: number;
   period_in_days: number;
   price: number | null;
-  is_real_accounts: number | boolean;
+  is_real_accounts: string | boolean;
 }
 export type productsStoreState = {
   success: boolean,
@@ -71,7 +71,8 @@ export type productsStoreState = {
     products: [],
     count: number,
   },
-  activatingId: number
+  activatingId: number,
+  lastDispatch: string,
 }
 
 export interface InputProps {
@@ -82,13 +83,13 @@ export interface InputProps {
 export interface InputChoicesProps extends InputProps {
   options: {
     label: string,
-    value: number
+    value: string
   }[],
 }
 export interface InputControlProps extends InputProps {
   control: string,
   options?: {
     label: string,
-    value: number
+    value: string | number
   }[],
 }

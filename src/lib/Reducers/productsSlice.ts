@@ -14,7 +14,8 @@ const initialState: productsStoreState = {
     products: [],
     count: 0
   },
-  activatingId: 0
+  activatingId: 0,
+  lastDispatch: '',
 }
 
 const productsSlice = createSlice({
@@ -44,6 +45,7 @@ const productsSlice = createSlice({
       state.loading = false
       state.success = true
       state.productsData = payload
+      state.lastDispatch = 'getProductsPerCategories'
     });
     builder.addCase(getProductsPerCategories.pending, (state) => {
       state.loading = true
@@ -54,12 +56,14 @@ const productsSlice = createSlice({
       state.success = false
       state.loading = false
       state.error = payload
+      state.lastDispatch = payload as string
     });
     // // activate specifc product
     builder.addCase(activeProduct.fulfilled, (state, { payload }) => {
       state.loading = false
       state.success = true
       state.activatingId = 0
+      state.lastDispatch = 'activeProduct'
     });
     builder.addCase(activeProduct.pending, (state) => {
       state.loading = true
@@ -71,6 +75,7 @@ const productsSlice = createSlice({
       state.loading = false
       state.error = payload;
       state.activatingId = 0
+      state.lastDispatch = payload as string
     });
 
     // disactivate specifc product
@@ -78,6 +83,7 @@ const productsSlice = createSlice({
       state.loading = false
       state.success = true
       state.activatingId = 0
+      state.lastDispatch = 'disActiveProduct'
 
     });
     builder.addCase(disActiveProduct.pending, (state) => {
@@ -90,12 +96,14 @@ const productsSlice = createSlice({
       state.loading = false
       state.error = payload
       state.activatingId = 0
+      state.lastDispatch = payload as string
     });
 
     // add new product
     builder.addCase(addProduct.fulfilled, (state, { payload }) => {
       state.loading = false
       state.success = true
+      state.lastDispatch = 'addProduct'
     });
     builder.addCase(addProduct.pending, (state) => {
       state.loading = true
@@ -106,11 +114,13 @@ const productsSlice = createSlice({
       state.success = false
       state.loading = false
       state.error = payload
+      state.lastDispatch = payload as string
     });
     // add new product
     builder.addCase(editProduct.fulfilled, (state, { payload }) => {
       state.loading = false
       state.success = true
+      state.lastDispatch = 'editProduct'
     });
     builder.addCase(editProduct.pending, (state) => {
       state.loading = true
@@ -121,6 +131,7 @@ const productsSlice = createSlice({
       state.success = false
       state.loading = false
       state.error = payload
+      state.lastDispatch = payload as string
     });
 
   }

@@ -1,8 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Pagination, Toggle } from 'rsuite'
-import PlusIcon from '@rsuite/icons/Plus';
-import EditIcon from '@rsuite/icons/Edit';
+import { Plus, Edit } from '@rsuite/icons';
 import ChevronRight from '@rsuite/icons/legacy/ChevronRight'
 import DataTable from 'react-data-table-component'
 import { formikValuesTypes, itemData, productsStoreState } from '@/types/types'
@@ -17,9 +16,7 @@ import { addProduct } from '@/lib/Actions/addProduct';
 import { editProduct } from '@/lib/Actions/editProduct';
 import FormikControl from '@/components/FormikControl';
 import useAxiosAuth from '@/lib/hooks/useAxiosAuth';
-import { useSession } from 'next-auth/react';
-import { redirect } from 'next/navigation';
-
+import { Toaster, toast } from 'sonner';
 
 const validationSchema = yup.object({
   service_id: yup.number().min(1).required('Required'),
@@ -27,7 +24,7 @@ const validationSchema = yup.object({
   count: yup.number().min(1).required('Required'),
   period_in_days: yup.number().min(1).required('Required'),
   price: yup.number().min(1).required('Required'),
-  is_real_accounts: yup.number().notOneOf([1, 2], 'must be real or fake').required('Required'),
+  is_real_accounts: yup.string().oneOf(['1', '2'], 'lll').required('must be real or fake'),
 });
 const categoriesChoices = [
   {
@@ -51,18 +48,18 @@ const categoriesChoices = [
 const radioOptions = [
   {
     label: 'Real',
-    value: 1
+    value: '1'
   },
   {
     label: 'Fake',
-    value: 2
+    value: '2'
   }
 ]
 
 type popUpStateType = {
   active: boolean,
   type: string,
-  id: number | null
+  id: number
 }
 interface pageProps {
   params: {
@@ -70,15 +67,9 @@ interface pageProps {
   }
 }
 const Page = ({ params }: pageProps) => {
-  const { data: session } = useSession({
-    required:true,
-    onUnauthenticated(){
-      redirect('/login')
-    }
-  })
   const { slug } = params;
   const [activePage, setActivePage] = useState(1);
-  const [showPopUp, setShowPopUp] = useState<popUpStateType>({ active: false, type: 'add', id: null });
+  const [showPopUp, setShowPopUp] = useState<popUpStateType>({ active: false, type: 'add', id: 0 });
   const [initialValues, setInitialValues] = useState<formikValuesTypes>({
     code: '',
     service_id: 0,
@@ -86,7 +77,7 @@ const Page = ({ params }: pageProps) => {
     count: 0,
     period_in_days: 0,
     price: 0,
-    is_real_accounts: 1
+    is_real_accounts: '1'
   })
   const dispatch = useDispatch<AppDispatch>();
   const axiosAuth = useAxiosAuth()
@@ -95,7 +86,8 @@ const Page = ({ params }: pageProps) => {
     success,
     loading,
     error,
-    productsData
+    productsData,
+    lastDispatch
   } = useSelector((state: { products: productsStoreState }) => state.products);
 
 
@@ -116,6 +108,30 @@ const Page = ({ params }: pageProps) => {
     }
     getAllProducts();
   }, [activePage, dispatch, slug, axiosAuth]);
+
+  useEffect(() => {
+    const message: string = lastDispatch == 'activeProduct'
+      ? 'The Product Has Been Successfully Activated'
+      : lastDispatch == 'disActiveProduct'
+        ? 'The Product Has Been Successfully Deactivated'
+        : lastDispatch == 'addProduct'
+          ? 'The Product Has Been Successfully Added'
+          : lastDispatch == 'editProduct'
+            ? 'The Product Has Been Successfully Updated'
+            : '';
+
+    if (success && lastDispatch !== 'getProductsPerCategories') {
+      setShowPopUp(prev => ({ ...prev, active: false }));
+      toast.success(message, {
+        position: 'bottom-left',
+      });
+    }
+    if (error) {
+      toast.error(error, {
+        position: 'bottom-left'
+      })
+    }
+  }, [success, lastDispatch, error])
 
 
   const columns = [
@@ -153,10 +169,10 @@ const Page = ({ params }: pageProps) => {
             disabled={loading && row.id == activatingId}
             onClick={() => toggleActivate(row.id, row.status)}
           />
-          <EditIcon
+          <Edit
             className=' text-primary w-4 h-4'
-            onClick={(e) => {
-              const { code, category: { id: category_id }, service: { id: service_id }, count, period_in_days, price, status: is_real_accounts } = row
+            onClick={() => {
+              const { code, category: { id: category_id }, service: { id: service_id }, count, period_in_days, price, status } = row
               setInitialValues({
                 code,
                 service_id,
@@ -164,7 +180,7 @@ const Page = ({ params }: pageProps) => {
                 count,
                 period_in_days,
                 price: price == null ? null : +price,
-                is_real_accounts,
+                is_real_accounts: `${status}`,
               })
               setShowPopUp(prev => ({ type: 'edit', active: !prev.active, id: row.id }))
             }
@@ -176,7 +192,6 @@ const Page = ({ params }: pageProps) => {
   ];
 
   return <div className=' p-8 h-screen flex flex-col justify-between items-center' >
-
     {showPopUp.active &&
       <>
         <div
@@ -193,8 +208,9 @@ const Page = ({ params }: pageProps) => {
                 ...values,
                 category_id: +values.category_id,
                 code: `code:${Math.random() * 1000}`,
-                is_real_accounts: +values.is_real_accounts == 1 ? true : false
+                is_real_accounts: values.is_real_accounts == '1' ? true : false
               }
+              console.log(productDetails)
               if (showPopUp.type == 'add') {
                 // add new product
                 dispatch(addProduct({ axiosAuth, productDetails }));
@@ -258,8 +274,13 @@ const Page = ({ params }: pageProps) => {
                   <button
                     disabled={loading}
                     type="submit"
-                    className='w-fit bg-levant-gradient-r text-[#fff] text-sm px-10 py-2 rounded-full'
-                  >{showPopUp.type == 'edit' ? 'edit' : 'continue'}</button>
+                    className='w-fit relative bg-levant-gradient-r text-[#fff] text-sm px-10 py-2 rounded-full'
+                  >
+                    {showPopUp.type == 'edit' ? 'edit' : 'continue'}
+                    {loading &&
+                      <div className="lds-dual-ring absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+                    }
+                  </button>
                 </div>
               </Form>
             )}
@@ -279,12 +300,24 @@ const Page = ({ params }: pageProps) => {
             }
           </div>
         ))}</div>
+        <Toaster duration={5000} richColors />
         <button
           type='button'
           className=' text-[#40E1FE] flex items-center'
-          onClick={() => { setShowPopUp(prev => ({ active: true, type: 'add', id: null })) }}
+          onClick={() => {
+            setInitialValues({
+              code: '',
+              service_id: 0,
+              category_id: 0,
+              count: 0,
+              period_in_days: 0,
+              price: 0,
+              is_real_accounts: '1'
+            })
+            setShowPopUp(prev => ({ active: true, type: 'add', id: 0 }))
+          }}
         >
-          <PlusIcon className=' w-3 h-3' />
+          <Plus className=' w-3 h-3' />
           <div>
             Add Service
           </div>

@@ -27,11 +27,11 @@ function RadioInput(props: InputChoicesProps) {
                   <input
                     {...field}
                     type='radio'
-                    id={`${option.value == 1 ? true : false}`}
+                    id={`${option.value == '1' ? true : false}`}
                     value={option.value}
                     checked={field.value == `${option.value}`}
                   />
-                  <label className=' text-secound' htmlFor={`${option.value == 1 ? true : false}`}>{option.label}</label>
+                  <label className=' text-secound' htmlFor={`${option.value == '1' ? true : false}`}>{option.label}</label>
                 </div>
               })
             }
