@@ -6,7 +6,6 @@ import { getServerSession } from 'next-auth';
 import StoreProvider from '../../Provider/StoreProvider';
 import SessionProvider from '../../Provider/AuthProvider';
 import SideBar from '@/components/SideBar';
-import { redirect } from 'next/navigation';
 import { options } from '../../pages/api/auth/[...nextauth]';
 
 
@@ -44,7 +43,6 @@ export default async function RootLayout({
   children: React.ReactNode
 }) {
   const session = await getServerSession(options)
-
   return (
     <StoreProvider>
       <html lang="en">

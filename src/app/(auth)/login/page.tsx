@@ -5,10 +5,11 @@ import 'rsuite/dist/rsuite-no-reset.min.css';
 import { Form, Formik } from 'formik';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { signIn, useSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import FormikControl from '@/components/FormikControl';
 import Image from 'next/image';
-import { redirect } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { Toaster, toast } from 'sonner';
 
 interface Props {
 }
@@ -36,25 +37,45 @@ const initialValues = {
   password: ''
 }
 const Page: NextPage<Props> = ({ }) => {
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const [toastShown, setToastShown] = useState(false);
   const onSubmit = async (values: Values) => {
     try {
       setLoading(true);
       await signIn("credentials", {
         username: values.username,
         password: values.password,
-        redirect:true,
-        callbackUrl:'/'
-      });
-    } catch (err) {
-      setError(error);
-    } finally {
+        redirect: true,
+        callbackUrl: '/'
+      })
       setLoading(false);
+    } catch (err) {
+      console.log(err)
     }
   }
+
+  const msgErr = searchParams?.get('error');
+  useEffect(() => {
+    if (!toastShown) {
+      setToastShown(true);
+    } else {
+      msgErr == 'fetch failed'
+        ? toast.error('network error')
+        : msgErr == 'CredentialsSignin'
+          ? toast.error('your email or password is incorrect')
+          : toast.error('try again');
+    }
+  }, [msgErr, toastShown])
+
   return (
     <div className=' min-h-screen relative bg-levant-gradient-120 w-full flex flex-col justify-center items-center'>
+      <Image
+        className=' absolute -top-9 w-28 h-28 left-3 z-10'
+        src="/Group_209.svg"
+        width={20}
+        height={20}
+        alt="" />
       <Image
         className=' absolute top-60 w-28 h-28 left-56 z-10'
         src="/Group_212.svg"
@@ -79,9 +100,10 @@ const Page: NextPage<Props> = ({ }) => {
         width={20}
         height={20}
         alt="" />
+
+      <Toaster duration={5000} expand={true} position="top-right" richColors />
       <div className=' absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex shadow-shadow-r-b flex-col items-center gap-4 w-[25rem] mx-auto bg-white rounded-3xl p-8'>
         <h1 className=' font-bold text-3xl capitalize text-primary mb-6'>log in</h1>
-        {error && <p>{error}</p>}
         <Formik
           initialValues={initialValues}
           validationSchema={validationSchema}
